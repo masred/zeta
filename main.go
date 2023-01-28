@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/masred/zeta/bot"
@@ -12,22 +14,62 @@ import (
 
 func main() {
 	if err := config.InitDefaultConfig(); err != nil {
-		log.Println(err.Error())
+		log.Fatalln("Error initiating config: ", err.Error())
 	}
 
-	dg, err := discordgo.New("Bot " + viper.GetString("token"))
+	discord, err := discordgo.New("Bot " + viper.GetString("app.token"))
 	if err != nil {
-		log.Println("Error creating Discord session: ", err)
-		return
+		log.Fatalln("Error creating Discord session: ", err)
 	}
 
-	dg.AddHandler(bot.MessageCreate)
+	discord.AddHandler(bot.MessageCreate)
+	discord.AddHandler(bot.MessageFromSlashCommand)
 
-	if err = dg.Open(); err != nil {
-		log.Println("Error opening Discord session: ", err)
+	if err = discord.Open(); err != nil {
+		log.Fatalln("Error opening Discord session: ", err)
 	}
-	defer dg.Close()
+	defer discord.Close()
 
-	fmt.Println("Bot is running. Press CTRL-C to exit.")
-	<-make(chan struct{})
+	log.Println("Bot ID: ", discord.State.User.ID)
+	log.Println("Number of Server: ", len(discord.State.Guilds))
+	log.Printf("Logged in as: %v#%v", discord.State.User.Username, discord.State.User.Discriminator)
+
+	appID := &discord.State.User.ID
+	commandPrefix := viper.GetString("app.command")
+	command := discordgo.ApplicationCommand{
+		Name:        commandPrefix,
+		Description: "hi👋, aku Zeta😁",
+		Options: []*discordgo.ApplicationCommandOption{{
+			Name:        "claim-role",
+			Description: "Choose role and add emoji",
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Options: []*discordgo.ApplicationCommandOption{{
+				Name:        "role",
+				Description: "Choose role",
+				Type:        discordgo.ApplicationCommandOptionRole,
+				Required:    true,
+			}, {
+				Name:        "emoji",
+				Description: "Press \"Win + .\" to add emoji",
+				Type:        discordgo.ApplicationCommandOptionString,
+				Required:    true,
+			}},
+		}},
+	}
+
+	registeredCommand, err := discord.ApplicationCommandCreate(*appID, "", &command)
+	if err != nil {
+		log.Fatalln("Error creating application command: ", err.Error())
+	}
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt)
+	log.Println("Bot is running. Press CTRL-C to exit.")
+	<-stop
+	fmt.Println("")
+
+	if err = discord.ApplicationCommandDelete(*appID, "", registeredCommand.ID); err != nil {
+		log.Fatalln("Error deleting application command: ", err.Error())
+	}
+	log.Println("Successfully deleted application command: ", registeredCommand.Name)
 }
