@@ -7,8 +7,9 @@ import (
 	"os/signal"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/masred/zeta/bot"
-	"github.com/masred/zeta/config"
+	"github.com/masred/zeta/cmd"
+	"github.com/masred/zeta/handler"
+	"github.com/masred/zeta/pkg/config"
 	"github.com/spf13/viper"
 )
 
@@ -22,7 +23,7 @@ func main() {
 		log.Fatalln("Error creating Discord session: ", err)
 	}
 
-	discord.AddHandler(bot.SetRoleByReactMessage)
+	discord.AddHandler(handler.SetRoleByReactMessageHandler)
 
 	if err = discord.Open(); err != nil {
 		log.Fatalln("Error opening Discord session: ", err)
@@ -33,29 +34,7 @@ func main() {
 	log.Printf("Used in %d servers", len(discord.State.Guilds))
 
 	appID := &discord.State.User.ID
-	commandPrefix := viper.GetString("app.command")
-	command := discordgo.ApplicationCommand{
-		Name:        commandPrefix,
-		Description: "hi👋, aku Zeta😁",
-		Options: []*discordgo.ApplicationCommandOption{{
-			Name:        "set-role-claim",
-			Description: "Set role claim by reacting the message",
-			Type:        discordgo.ApplicationCommandOptionSubCommand,
-			Options: []*discordgo.ApplicationCommandOption{{
-				Name:        "role",
-				Description: "Choose role",
-				Type:        discordgo.ApplicationCommandOptionRole,
-				Required:    true,
-			}, {
-				Name:        "emoji",
-				Description: "Press \"Win + .\" to add emoji",
-				Type:        discordgo.ApplicationCommandOptionString,
-				Required:    true,
-			}},
-		}},
-	}
-
-	registeredCommand, err := discord.ApplicationCommandCreate(*appID, "", &command)
+	registeredCommand, err := discord.ApplicationCommandCreate(*appID, "", &cmd.SetRoleCommand)
 	if err != nil {
 		log.Fatalln("Error creating application command: ", err.Error())
 	}

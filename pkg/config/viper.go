@@ -9,5 +9,6 @@ func InitDefaultConfig() (err error) {
 	if err = viper.ReadInConfig(); err != nil {
 		return
 	}
+
 	return
 }

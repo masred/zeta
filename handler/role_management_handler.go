@@ -1,4 +1,4 @@
-package bot
+package handler
 
 import (
 	"log"
@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func SetRoleByReactMessage(s *discordgo.Session, i *discordgo.InteractionCreate) {
+func SetRoleByReactMessageHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	commadPrefix := viper.GetString("app.command")
 	data := i.ApplicationCommandData()
 	switch data.Name {
