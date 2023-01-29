@@ -22,17 +22,15 @@ func main() {
 		log.Fatalln("Error creating Discord session: ", err)
 	}
 
-	discord.AddHandler(bot.MessageCreate)
-	discord.AddHandler(bot.MessageFromSlashCommand)
+	discord.AddHandler(bot.SetRoleByReactMessage)
 
 	if err = discord.Open(); err != nil {
 		log.Fatalln("Error opening Discord session: ", err)
 	}
 	defer discord.Close()
 
-	log.Println("Bot ID: ", discord.State.User.ID)
-	log.Println("Number of Server: ", len(discord.State.Guilds))
 	log.Printf("Logged in as: %v#%v", discord.State.User.Username, discord.State.User.Discriminator)
+	log.Printf("Used in %d servers", len(discord.State.Guilds))
 
 	appID := &discord.State.User.ID
 	commandPrefix := viper.GetString("app.command")
@@ -40,8 +38,8 @@ func main() {
 		Name:        commandPrefix,
 		Description: "hi👋, aku Zeta😁",
 		Options: []*discordgo.ApplicationCommandOption{{
-			Name:        "claim-role",
-			Description: "Choose role and add emoji",
+			Name:        "set-role-claim",
+			Description: "Set role claim by reacting the message",
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
 			Options: []*discordgo.ApplicationCommandOption{{
 				Name:        "role",
